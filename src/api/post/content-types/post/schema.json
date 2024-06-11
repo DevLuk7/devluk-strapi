@@ -12,14 +12,14 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "content": {
-      "type": "richtext"
-    },
     "title": {
       "type": "string"
     },
     "slug": {
       "type": "string"
+    },
+    "content": {
+      "type": "richtext"
     }
   }
 }
