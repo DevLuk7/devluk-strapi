@@ -1,0 +1,84 @@
+name: Build and Deploy DevLuk Strapi CMS
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: Build and Deploy to AWS Elastic Beanstalk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20"
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install EB CLI
+        run: |
+          pip install --upgrade pip
+          pip install awsebcli
+
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+      - name: Build, tag, and push Docker image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY: devluk-cms
+          IMAGE_TAG: devluk-cms-${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Create Dockerrun.aws.json
+        env:
+          ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY: devluk-cms
+          IMAGE_TAG: devluk-cms-${{ github.sha }}
+        run: |
+          echo '{
+            "AWSEBDockerrunVersion": "1",
+            "Image": {
+              "Name": "'$ECR_REGISTRY'/'$ECR_REPOSITORY':'$IMAGE_TAG'",
+              "Update": "true"
+            },
+            "Ports": [
+              {
+                "ContainerPort": 8080
+              }
+            ]
+          }' > Dockerrun.aws.json
+
+      - name: Create Application Version Archive
+        run: |
+          zip -r app.zip Dockerrun.aws.json
+
+      - name: Upload to S3
+        env:
+          EB_BUCKET: ${{ secrets.EB_BUCKET }}
+        run: |
+          aws s3 cp app.zip s3://$EB_BUCKET/app.zip
+
+      - name: Create Application Version in Elastic Beanstalk
+        env:
+          EB_BUCKET: ${{ secrets.EB_BUCKET }}
+        run: |
+          aws elasticbeanstalk create-application-version --application-name ${{ secrets.EB_APP_NAME }} --version-label ${{ github.sha }} --source-bundle S3Bucket=$EB_BUCKET,S3Key=app.zip --region ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to Elastic Beanstalk
+        run: |
+          aws elasticbeanstalk update-environment --environment-name ${{ secrets.EB_ENV_NAME }} --version-label ${{ github.sha }} --region ${{ secrets.AWS_REGION }}
