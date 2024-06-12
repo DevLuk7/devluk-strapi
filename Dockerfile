@@ -11,7 +11,7 @@ COPY . .
 ENV PORT 8080
 ENV NODE_ENV production
 
-RUN npm build
+RUN npm run build
 
 EXPOSE 8080
 
