@@ -377,6 +377,7 @@ export interface ApiPostPost extends Schema.CollectionType {
     title: Attribute.String;
     slug: Attribute.String;
     content: Attribute.RichText;
+    image: Attribute.Media<'images'> & Attribute.Required;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
