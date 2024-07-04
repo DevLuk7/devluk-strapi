@@ -15,4 +15,4 @@ RUN npm run build
 
 EXPOSE 8080
 
-CMD [ "npm", "start" ]
+CMD ["sh", "-c", "npm run getDBFromS3 && npm run start && npm run cron"]
