@@ -13,7 +13,8 @@
     "develop": "strapi develop",
     "getDBFromS3": "node scripts/get-db-from-s3.js",
     "start": "strapi start",
-    "strapi": "strapi"
+    "strapi": "strapi",
+    "uploadDBToLatestS3": "node scripts/upload-db-to-latest-s3.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.609.0",

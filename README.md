@@ -55,3 +55,7 @@ Feel free to check out the [Strapi GitHub repository](https://github.com/strapi/
 ---
 
 <sub>🤫 Psst! [Strapi is hiring](https://strapi.io/careers).</sub>
+
+docker build -t get-test .
+
+docker run -d -p 8080:8080 --name get-test-container get-test
